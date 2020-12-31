@@ -1,5 +1,9 @@
 @file:Suppress("NOTHING_TO_INLINE")
 
+import java.util.*
+import kotlin.collections.ArrayDeque
+import kotlin.collections.ArrayList
+
 class Point(val x: Int, val y: Int)
 
 private const val DEFAULT_DEPTH: Short = -1
@@ -43,8 +47,8 @@ class BFS(val width: Int, val height: Int) {
 
     fun path(from: Point, to: Point): Array<Point>? {
         // for optimize use index not Point.
-        val fromIndex = from.x + from.y * width
-        val toIndex = to.x + to.y * width
+        val fromIndex = getIndex(from.x, from.y)
+        val toIndex = getIndex(to.x, to.y)
         val offsets = shortArrayOf(1, -1, width.toShort(), (-width).toShort())  //performs better as local variable
 
         // fill use bfs
@@ -102,9 +106,96 @@ class BFS(val width: Int, val height: Int) {
         return result
     }
 
-    inline fun getPoint(x: Int, y: Int): Point {
-        return cachedPoints[x + y * width]
+    var openNodes = ArrayDeque<Point>()
+    var cachedScore = ShortArray(width * height, { Short.MAX_VALUE })
+
+    fun path2(from: Point, to: Point): ArrayList<Point>? {
+
+        openNodes.clear()
+        cachedScore.setAll(Short.MAX_VALUE)
+        openNodes.add(from)
+        cachedScore.set(getIndex(from), 0)
+
+        while (openNodes.isNotEmpty()) {
+
+            val currentNode = openNodes.removeFirst()
+            if (currentNode == to) {
+                break
+            }
+            val currentScore: Short = cachedScore[getIndex(currentNode.x, currentNode.y)]
+            forEachSide(currentNode) { x, y ->
+                val newScore: Short = (currentScore + 1).toShort()
+                if (newScore < cachedScore[getIndex(x, y)]) {
+                    cachedScore[getIndex(x, y)] = newScore
+                    openNodes.add(getPoint(x, y))
+                }
+            }
+        }
+
+        if (cachedScore.get(getIndex(to)) == Short.MAX_VALUE) { // not found
+            return null
+        }
+
+        // make path
+
+        val result = ArrayList<Point>()
+        var curPoint = to
+        result.add(to)
+
+        while (curPoint != from) {
+            var minScore = Short.MAX_VALUE
+            var nextPoint = curPoint
+
+            forEachSide(curPoint) { x, y ->
+                val newScore = cachedScore[getIndex(x, y)]
+                if (minScore > newScore) {
+                    minScore = newScore
+                    nextPoint = cachedPoints[getIndex(x, y)]
+                }
+            }
+            result.add(nextPoint)
+
+            curPoint = result.last()
+        }
+
+        result.reverse()
+        return result
     }
+
+    private fun getIndex(point: Point): Int {
+        return getIndex(point.x, point.y)
+    }
+
+    private inline fun forEachSide(currentNode: Point, operation: (x: Int, y: Int) -> Unit) {
+        val x = currentNode.x
+        val y = currentNode.y
+        ifFreeCall(x + -1, y + 0, operation)
+        ifFreeCall(x + 1, y + 0, operation)
+        ifFreeCall(x + 0, y + 1, operation)
+        ifFreeCall(x + 0, y + -1, operation)
+    }
+
+    private inline fun ifFreeCall(x: Int, y: Int, operation: (x: Int, y: Int) -> Unit) {
+        if (x >= width || x < 0) {
+            return
+        }
+        if (y >= width || y < 0) {
+            return
+        }
+
+        if (walls[getIndex(x, y)]) {
+            return
+        }
+
+        operation(x, y)
+    }
+
+
+    inline fun getPoint(x: Int, y: Int): Point {
+        return cachedPoints[getIndex(x, y)]
+    }
+
+    inline fun getIndex(x: Int, y: Int) = x + y * width
 }
 
 private inline fun ShortArray.setAll(value: Short) {

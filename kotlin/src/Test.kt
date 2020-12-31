@@ -4,7 +4,7 @@ class Test {
         val bfs = BFS(width = 100, height = 100)
         bfs.generateWalls()
         for (index in 0 until 10000) {
-            val result = bfs.path(bfs.getPoint(1, 1), bfs.getPoint(98, 98))
+            val result = bfs.path2(bfs.getPoint(1, 1), bfs.getPoint(98, 98))
         }
         Thread.sleep(2_000L)
     }
@@ -16,7 +16,7 @@ class Test {
         val bfs = BFS(width = 100, height = 100)
         bfs.generateWalls()
         for (index in 0 until 100000) {
-            val result = bfs.path(bfs.getPoint(1, 1), bfs.getPoint(98, 98))
+            val result = bfs.path2(bfs.getPoint(1, 1), bfs.getPoint(98, 98))
         }
         val endTime = System.nanoTime()
 
